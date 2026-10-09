@@ -47,10 +47,3 @@ Alongside functionality, development focuses on:
 - Documentation of implementation decisions and lessons learned.
 
 This is an educational project under active development. It does not currently claim full POSIX compatibility or production readiness.
-
-# License
-
-This project is licensed under the MIT License. See the LICENSE file
-for details.
-
-Third-party material remains subject to its applicable licenses.

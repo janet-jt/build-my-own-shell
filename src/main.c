@@ -7,6 +7,7 @@
 #include <limits.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <errno.h>
 
 #define INPUT_SIZE 1024
 #define MAX_ARGS 64
@@ -71,6 +72,7 @@ int main(void) {
       break;
     }
     else if (strncmp(argv[0], "echo" , 4) == 0) {
+      //Bug: when I use echo "xxx     yyy", cannot keep the spaces
       echo_builtin(argc, argv);
     }
     else if (strncmp(argv[0], "type" , 4) == 0) {
@@ -84,7 +86,12 @@ int main(void) {
       pwd_builtin();
     }
     else if (strncmp(argv[0], "cd", 2) == 0) {
-      cd_builtin(argv[1]);
+      if (argc > 2) {
+        fprintf(stderr, "cd: too many arguments\n");
+      }
+      else {
+        cd_builtin(argv[1]);
+      }
     }
     else {
       if (input[0] != '\0') {
@@ -110,7 +117,6 @@ char *trimwhitespace(char input[INPUT_SIZE]){
   char *ptr_input = input;
   char *end_input;
 
-  //Triming leading and tailing space
   while(isspace((unsigned char)*ptr_input)) ptr_input++;
 
   memmove(input, ptr_input, strlen(ptr_input) + 1);
@@ -158,13 +164,49 @@ void pwd_builtin() {
 }
 
 void cd_builtin(const char *path) {
-  int status = chdir(path);
-  if (status == -1) {
-    fprintf(stderr, "cd: %s: No such file or directory\n", path);
+  int status;
+  char *home_path, *cd_path;
+
+  home_path = getenv("HOME");
+  if (home_path == NULL) {
+    home_path = "/";
+  }
+
+  if (path == NULL || (strcmp(path, "~") == 0)) {
+    cd_path = strdup(home_path);
+  }
+  else if (strncmp(path, "~/", 2) == 0) {
+    size_t home_size = strlen(home_path);
+    size_t remain_size = strlen(path + 1);
+    size_t total_size = home_size + remain_size + 1;
+
+    cd_path = malloc(total_size);
+    if (cd_path != NULL) {
+      int length_needed = snprintf(cd_path, total_size, "%s%s", home_path, path + 1);
+
+      if (length_needed < 0 || (size_t)length_needed >= total_size) {
+        fprintf(stderr, "Buffer too small (or encoding error)\n");
+      }
+    }
+  }
+  else {
+    cd_path = strdup(path);
+  }
+
+  if (cd_path == NULL) {
+    fprintf(stderr, "Memory Allocation Failed\n");
     return;
   }
+  
+  status = chdir(cd_path);
+  if (status == -1) {
+    fprintf(stderr, "cd: %s: %s\n", path, strerror(errno));
+    free(cd_path);
+    return;
+  }
+  free(cd_path);
 }
-
+ 
 char* search_path(const char *cmd) {
   if (cmd == NULL || *cmd == '\0') {
     return NULL;

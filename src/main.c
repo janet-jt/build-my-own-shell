@@ -23,7 +23,6 @@ typedef enum {
 
 Builtin type_command(const char *cmd);
 
-char *trimwhitespace(char input[INPUT_SIZE]);
 void echo_builtin(int argc, char *argv[]);
 void type_builtin(const char *cmd);
 void pwd_builtin();
@@ -50,8 +49,6 @@ int main(void) {
     
     size_t len = strcspn(input, "\r\n");
     input[len] = '\0';
-
-    trimwhitespace(input);
 
     arg_ptr = input;
     while ((arg = strsep(&arg_ptr, " ")) != NULL) {
@@ -111,24 +108,6 @@ Builtin type_command(const char *cmd) {
   if (strncmp(cmd, "pwd", 3) == 0) return BUILTIN_PWD;
   if (strncmp(cmd, "cd", 2) == 0) return BUILTIN_CD;
   return BUILTIN_UNKNOWN;
-}
-
-char *trimwhitespace(char input[INPUT_SIZE]){
-  char *ptr_input = input;
-  char *end_input;
-
-  while(isspace((unsigned char)*ptr_input)) ptr_input++;
-
-  memmove(input, ptr_input, strlen(ptr_input) + 1);
-
-  if (*input == '\0') return input;
-
-  end_input = input + strlen(input) - 1;
-  while(end_input > input && isspace((unsigned char) *end_input)) end_input--;
-
-  end_input[1] = '\0';
-
-  return input;
 }
 
 void echo_builtin(int argc, char *argv[]) {
